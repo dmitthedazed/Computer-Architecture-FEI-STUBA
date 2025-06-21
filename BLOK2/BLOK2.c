@@ -1,4 +1,3 @@
-// Author: Dmitrii Savin
 // Datum: 14.04.2025
 // BLOK2 – Uloha 2.1.1, 2.1.2, 2.1.3, 2.2, 2.3.2, 2.5.1
 // Pocet bodov: 10
