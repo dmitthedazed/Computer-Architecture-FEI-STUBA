@@ -7,7 +7,7 @@ void tobinary(unsigned int value, char *binarystr) {
     int k = 0;
     if (value == 0) {
         strcpy(binarystr, "0");
-        return;
+        return; 
     }
     while (value != 0) {
         if (value % 2 == 0) {
