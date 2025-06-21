@@ -1,3 +1,15 @@
+// Úloha 1.3 (2b)
+// Napíšte program, ktorý spočíta počet jednotiek (nastavených bitov) 
+// v binárnej reprezentácii zadaného čísla.
+//
+// Príklad:
+// Vstup: 13 (binárne 1101)
+// Výstup: 3 jednotky
+//
+// Tip 1: Využite bitový AND a bitový posun. 
+// Ako použiť bitové operácie v jazyku C sa dozviete tu. 
+// Zaujímavé video na túto tému je tu.
+
 #include <stdio.h>
 
 int main() {
