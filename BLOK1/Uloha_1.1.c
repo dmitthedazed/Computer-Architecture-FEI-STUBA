@@ -1,3 +1,15 @@
+// Úloha 1.1 (2b)
+// Napíšte program, ktorý zobrazí nasledovné dva vstupy: 
+//
+//     číslo 33777
+//     ASCII kód znaku ‘X’ 
+//
+// v dvojkovej, desiatkovej a šestnástkovej sústave. 
+// Program musí fungovať tak, aby bolo vstupy možné meniť (stačí v zdrojovom súbore).
+//
+// Tip: Použite čo najmenší počet premenných; využite možnosti, 
+// ktoré poskytuje funkcia printf, prevod do dvojkovej sústavy však budete musieť naprogramovať.
+
 #include <stdio.h>
 #include <string.h>
 
