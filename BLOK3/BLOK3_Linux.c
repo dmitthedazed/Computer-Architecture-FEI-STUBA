@@ -1,16 +1,38 @@
 #include <stdio.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <windows.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
 #include <string.h> 
 #include <stdlib.h> 
+#include <errno.h>
+#include <termios.h>
+#include <sys/ioctl.h>
 
-#pragma comment(lib, "Ws2_32.lib")
+// ANSI color codes for terminal output
+#define ANSI_COLOR_RESET   "\x1b[0m"
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_WHITE   "\x1b[37m"
+#define ANSI_COLOR_BRIGHT_BLUE "\x1b[94m"
+#define ANSI_COLOR_BRIGHT_GREEN "\x1b[92m"
+#define ANSI_COLOR_BRIGHT_RED "\x1b[91m"
 
-// Function to set console output to UTF-8
+// Structure to track cursor position
+typedef struct {
+    int X;
+    int Y;
+} COORD;
+
+// Function to set console output to UTF-8 (no-op on Unix systems as they typically use UTF-8 by default)
 void utf8_console() {
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
+    // Unix systems typically use UTF-8 by default, so this is a no-op
+    printf("\033[?25h"); // Ensure cursor is visible
 }
 
 // Function to calculate the remainder as per the requirements
@@ -36,53 +58,51 @@ int aisid_remainder(int student_id) {
 
 // Function to log messages to a file
 void log_message(const char *source, const char *message) {
-    FILE *logFile = NULL;
-    errno_t err;
-
-    err = fopen_s(&logFile, "chat_log.txt", "a"); 
-    if (err != 0 || logFile == NULL) { 
-        char errmsg[256];
-        strerror_s(errmsg, sizeof(errmsg), err); 
-        fprintf(stderr, "Error opening log file: %s (code: %d)\n", errmsg, err);
-        if (logFile == NULL && err == 0) { 
-             perror("Error opening log file (perror)");
-        }
+    FILE *logFile = fopen("chat_log.txt", "a");
+    if (logFile == NULL) {
+        fprintf(stderr, "Error opening log file: %s\n", strerror(errno));
         return;
     }
     fprintf(logFile, "%s: %s\n", source, message);
     fclose(logFile);
 }
 
-void print_with_position(HANDLE console, const char* text, COORD* point_ptr, WORD color) {
-    SetConsoleCursorPosition(console, *point_ptr);
-    SetConsoleTextAttribute(console, color);
-    
+void print_with_position(const char* text, COORD* point_ptr, const char* color) {
+    printf("\033[%d;%dH", point_ptr->Y + 1, point_ptr->X + 1); // Move cursor to position
+    printf("%s", color);
     printf("%s", text);
+    printf(ANSI_COLOR_RESET);
     
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    if (GetConsoleScreenBufferInfo(console, &csbi)) {
-        *point_ptr = csbi.dwCursorPosition;
-    }
+    // Update cursor position
+    point_ptr->X += strlen(text);
 }
 
-void print_newline(HANDLE console, COORD* point_ptr) {
+void print_newline(COORD* point_ptr) {
     printf("\n");
     point_ptr->X = 0;
     point_ptr->Y += 1;
-    SetConsoleCursorPosition(console, *point_ptr);
 }
 
-void sync_cursor_position(HANDLE console, COORD* point_ptr) {
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    if (GetConsoleScreenBufferInfo(console, &csbi)) {
-        *point_ptr = csbi.dwCursorPosition;
-    }
+void sync_cursor_position(COORD* point_ptr) {
+    // In a simple implementation, we just trust our tracking
+    // For a more sophisticated version, we could query the terminal
+}
+
+void clear_screen() {
+    printf("\033[2J\033[H"); // Clear screen and move cursor to home
+}
+
+void move_cursor(int x, int y) {
+    printf("\033[%d;%dH", y + 1, x + 1);
+}
+
+void usleep_ms(int milliseconds) {
+    usleep(milliseconds * 1000);
 }
 
 int main(void) 
 {
     utf8_console(); 
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     
     // Add cursor positioning for two-sided chat display
     COORD point;
@@ -90,82 +110,59 @@ int main(void)
     point.Y = 0;
     
     // Clear screen at start for clean display
-    system("cls");
+    clear_screen();
 
-    WSADATA wsaData;
-    int iResult;
+    int sockfd;
+    struct sockaddr_in server_addr;
+    struct hostent *server;
 
-    iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-    if (iResult != 0)
-    {
-        printf("WSAStartup failed: %d\n", iResult);
+    // Create socket
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        fprintf(stderr, "Error opening socket: %s\n", strerror(errno));
         return 1;
     }
+    
+    printf("Socket created successfully...\n");
 
-    struct addrinfo *result = NULL, *ptr = NULL;
-    struct addrinfo hints;
-
-    ZeroMemory(&hints, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-
-    iResult = getaddrinfo("147.175.115.34", "777", &hints, &result);
-    if (iResult != 0)
-    {
-        WSACleanup();
+    // Get server by name
+    server = gethostbyname("147.175.115.34");
+    if (server == NULL) {
+        fprintf(stderr, "Error: no such host\n");
+        close(sockfd);
         return 1;
     }
-    else
-        printf("getaddrinfo didn't fail...\n");
+    
+    printf("Host resolved successfully...\n");
 
-    SOCKET ConnectSocket = INVALID_SOCKET;
+    // Setup server address structure
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(777);
+    memcpy(&server_addr.sin_addr.s_addr, server->h_addr, server->h_length);
 
-    ptr = result;
-
-    ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype,ptr->ai_protocol);
-
-    if (ConnectSocket == INVALID_SOCKET)
-    {
-        printf("Error at socket(): %ld\n", WSAGetLastError());
-        freeaddrinfo(result);
-        WSACleanup();
-        return 1;
-    }
-    else
-        printf("Error at socket DIDN'T occur...\n");
-
-    iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
-    if (iResult == SOCKET_ERROR)
-    {
+    // Connect to server
+    if (connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         printf("Not connected to server...\n");
-        closesocket(ConnectSocket);
-        ConnectSocket = INVALID_SOCKET;
-        freeaddrinfo(result);
-        WSACleanup();
+        close(sockfd);
         return 1;
-    }
-    else
-    {
+    } else {
         printf("Connected to server!\n");
     }
     
-    Sleep(250);
+    usleep_ms(250);
 
     #define DEFAULT_BUFLEN 4096
     char sendbuf[DEFAULT_BUFLEN];
     char recvbuf[DEFAULT_BUFLEN];
-    int recvbuflen = DEFAULT_BUFLEN;
 
     while (1) {
         // User message left side
         point.X = 0;
         point.Y += 2;
-        SetConsoleCursorPosition(hConsole, point);
+        move_cursor(point.X, point.Y);
         
-        SetConsoleTextAttribute(hConsole, 9); 
-        printf("Enter message: ");
-        SetConsoleTextAttribute(hConsole, 15); 
+        printf(ANSI_COLOR_BRIGHT_BLUE "Enter message: " ANSI_COLOR_RESET);
         if (fgets(sendbuf, sizeof(sendbuf), stdin) == NULL) {
             printf("Error reading input.\n");
             break; 
@@ -174,16 +171,14 @@ int main(void)
         sendbuf[strcspn(sendbuf, "\n")] = 0;
 
         if (strcmp(sendbuf, "quit") == 0) {
-            SetConsoleTextAttribute(hConsole, 9); 
-            printf("Exiting chat.\n");
-            SetConsoleTextAttribute(hConsole, 15); 
+            printf(ANSI_COLOR_BRIGHT_BLUE "Exiting chat.\n" ANSI_COLOR_RESET);
             log_message("User", "quit"); 
             break;
         }
+        
         point.Y += 1;
-        SetConsoleCursorPosition(hConsole, point);
-        SetConsoleTextAttribute(hConsole, 9);
-        printf("You: ");
+        move_cursor(point.X, point.Y);
+        printf(ANSI_COLOR_BRIGHT_BLUE "You: " ANSI_COLOR_RESET);
         
         int counter = 0;
         for (int i = 0; i < strlen(sendbuf); i++) {
@@ -198,7 +193,7 @@ int main(void)
                     counter = 0;
                     point.X = 0;
                     point.Y += 1;
-                    SetConsoleCursorPosition(hConsole, point);
+                    move_cursor(point.X, point.Y);
                 }
             }
             
@@ -206,31 +201,29 @@ int main(void)
                 counter = 0;
                 point.X = 0;
                 point.Y += 1;
-                SetConsoleCursorPosition(hConsole, point);
+                move_cursor(point.X, point.Y);
             }
             
             printf("%c", sendbuf[i]);
-            Sleep(1);
+            fflush(stdout);
+            usleep_ms(1);
             counter++;
         }
         printf("\n");
-        SetConsoleTextAttribute(hConsole, 15); 
         
         log_message("User", sendbuf); 
 
-        iResult = send(ConnectSocket, sendbuf, (int)strlen(sendbuf), 0);
-        if (iResult == SOCKET_ERROR)
-        {
-            printf("send failed: %d\n", WSAGetLastError());
-            closesocket(ConnectSocket);
-            WSACleanup();
+        ssize_t bytes_sent = send(sockfd, sendbuf, strlen(sendbuf), 0);
+        if (bytes_sent < 0) {
+            fprintf(stderr, "send failed: %s\n", strerror(errno));
+            close(sockfd);
             return 1;
         }
 
         if (strcmp(sendbuf, "753332") == 0) {
             point.X = 0;
             point.Y += 1;
-            SetConsoleCursorPosition(hConsole, point);
+            move_cursor(point.X, point.Y);
             
             int remainder_result = aisid_remainder(135532);
         
@@ -240,43 +233,40 @@ int main(void)
             }
         }
 
-        ZeroMemory(recvbuf, DEFAULT_BUFLEN);
+        memset(recvbuf, 0, DEFAULT_BUFLEN);
 
-        iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
+        ssize_t bytes_received = recv(sockfd, recvbuf, DEFAULT_BUFLEN - 1, 0);
 
-        if (iResult > 0)
-        {
+        if (bytes_received > 0) {
             point.X = 0;
             point.Y += 1;
-            SetConsoleCursorPosition(hConsole, point);
+            move_cursor(point.X, point.Y);
             
-            printf("Bytes received: %d\n", iResult);
+            printf("Bytes received: %ld\n", bytes_received);
             point.Y += 1; 
 
-            if (iResult == 131) {
+            if (bytes_received == 131) {
                 printf("Decrypting 131 byte message...\n");
                 point.Y += 1; // Update Y position
-                for (int k = 0; k < iResult; k++) {
+                for (int k = 0; k < bytes_received; k++) {
                     recvbuf[k] = recvbuf[k] ^ 55;
                 }
             }
             
             char temp_recv_log_buf[DEFAULT_BUFLEN + 1];
-            memcpy(temp_recv_log_buf, recvbuf, iResult);
-            temp_recv_log_buf[iResult] = '\0';
+            memcpy(temp_recv_log_buf, recvbuf, bytes_received);
+            temp_recv_log_buf[bytes_received] = '\0';
             
             point.X = 50;
-            SetConsoleCursorPosition(hConsole, point);
+            move_cursor(point.X, point.Y);
             
             if (strcmp(sendbuf, "PRIMENUMBER") == 0) {
-                char* prime_extracted_message = (char*)malloc(iResult + 1);
+                char* prime_extracted_message = (char*)malloc(bytes_received + 1);
                 if (prime_extracted_message == NULL) {
-                    SetConsoleTextAttribute(hConsole, 12); // Bright Red for error
-                    printf("Error: Memory allocation failed.\n");
-                    SetConsoleTextAttribute(hConsole, 15); // Reset to White
+                    printf(ANSI_COLOR_BRIGHT_RED "Error: Memory allocation failed.\n" ANSI_COLOR_RESET);
                 } else {
                     int n = 0;
-                    for (int idx_to_check = 2; idx_to_check <= iResult; idx_to_check++) {
+                    for (int idx_to_check = 2; idx_to_check <= bytes_received; idx_to_check++) {
                         int is_prime = 1;
                         for (int j = 2; j * j <= idx_to_check; j++) {
                             if (idx_to_check % j == 0) {
@@ -291,8 +281,7 @@ int main(void)
                     }
                     prime_extracted_message[n] = '\0';
 
-                    SetConsoleTextAttribute(hConsole, 10);
-                    printf("Server (PRIME): ");
+                    printf(ANSI_COLOR_BRIGHT_GREEN "Server (PRIME): " ANSI_COLOR_RESET);
                     
                     int counter = 0;
                     for (int j = 0; j < n; j++) {
@@ -300,28 +289,27 @@ int main(void)
                             counter = 0;
                             point.X = 50;
                             point.Y += 1;
-                            SetConsoleCursorPosition(hConsole, point);
+                            move_cursor(point.X, point.Y);
                         }
                         
                         printf("%c", prime_extracted_message[j]);
-                        Sleep(1);
+                        fflush(stdout);
+                        usleep_ms(1);
                         counter++;
                     }
                     printf("\n");
-                    SetConsoleTextAttribute(hConsole, 15); // Reset to White
                     log_message("Server (PRIMENUMBER)", prime_extracted_message);
                     free(prime_extracted_message);
                 }
             } else {
-                SetConsoleTextAttribute(hConsole, 10); // Green for server
-                printf("Server: ");
+                printf(ANSI_COLOR_BRIGHT_GREEN "Server: " ANSI_COLOR_RESET);
                 
                 int counter = 0;
-                for (int j = 0; j < iResult; j++) {
+                for (int j = 0; j < bytes_received; j++) {
                     if (recvbuf[j] == ' ') {
                         int wordLen = 0;
                         int k = j + 1;
-                        while (k < iResult && recvbuf[k] != ' ' && recvbuf[k] != '\0') {
+                        while (k < bytes_received && recvbuf[k] != ' ' && recvbuf[k] != '\0') {
                             wordLen++;
                             k++;
                         }
@@ -329,7 +317,7 @@ int main(void)
                             counter = 0;
                             point.X = 50;
                             point.Y += 1;
-                            SetConsoleCursorPosition(hConsole, point);
+                            move_cursor(point.X, point.Y);
                         }
                     }
                     
@@ -337,35 +325,30 @@ int main(void)
                         counter = 0;
                         point.X = 50;
                         point.Y += 1;
-                        SetConsoleCursorPosition(hConsole, point);
+                        move_cursor(point.X, point.Y);
                     }
                     
                     printf("%c", recvbuf[j]);
-                    Sleep(1);
+                    fflush(stdout);
+                    usleep_ms(1);
                     counter++;
                 }
                 printf("\n");
-                SetConsoleTextAttribute(hConsole, 15); // Reset to White
                 log_message("Server", temp_recv_log_buf);
             }
             
             point.Y += 1;  
         }
-        else if (iResult == 0)
-        {
+        else if (bytes_received == 0) {
             printf("Connection closed by server.\n");
             break;
         }
-        else
-        {
-            printf("recv failed with error: %d\n", WSAGetLastError());
+        else {
+            fprintf(stderr, "recv failed with error: %s\n", strerror(errno));
             break;
         }
     }
 
-    freeaddrinfo(result);
-    closesocket(ConnectSocket);
-    WSACleanup();
-
+    close(sockfd);
     return 0;
 }
