@@ -1,8 +1,12 @@
 # BLOK 3 — Network Programming (TCP Client) / Сетевое программирование (TCP-клиент)
 
+🌐 **Course website:** [ap.urk.fei.stuba.sk](http://ap.urk.fei.stuba.sk/) | [Block 3 tasks](http://ap.urk.fei.stuba.sk/index.php?page=blok3)
+
 ## 🇬🇧 English
 
 Block 3 implements a TCP chat client that connects to a course server. Two platform-specific versions are provided.
+
+**Server:** `147.175.115.34` · **Port:** `777` · **Protocol:** TCP
 
 ### Files
 
@@ -43,7 +47,10 @@ cl BLOK3_MSVC.c ws2_32.lib
 
 ## 🇷🇺 Русский
 
-Блок 3 реализует TCP чат-клиент для подключения к серверу курса. Представлены две платформенные версии.
+Блок 3 реализует TCP чат-клиент для подключения к серверу курса. Представлены две платформенные версии.  
+🌐 [Страница курса](http://ap.urk.fei.stuba.sk/) · [Задания Блока 3](http://ap.urk.fei.stuba.sk/index.php?page=blok3)
+
+**Сервер:** `147.175.115.34` · **Порт:** `777` · **Протокол:** TCP
 
 ### Файлы
 
