@@ -1,0 +1,40 @@
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+*.suo
+*.user
+
+# Build artifacts
+*.o
+*.obj
+*.exe
+*.out
+*.a
+*.lib
+*.dll
+*.so
+*.dylib
+
+# Visual Studio
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+.vs/
+Debug/
+Release/
+x64/
+x86/
+ipch/
+
+# VS Code
+.vscode/
+
+# Generated files
+chat_log.txt
+BLOK3/blok3_chat
+
+# Comparison repos
+.compare/
