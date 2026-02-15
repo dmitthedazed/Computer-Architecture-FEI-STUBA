@@ -1,6 +1,6 @@
 # BLOK 1 — Number Systems & C Basics / Числовые системы и основы C
 
-🌐 **Course website:** [ap.urk.fei.stuba.sk](http://ap.urk.fei.stuba.sk/) | [Block 1 tasks](http://ap.urk.fei.stuba.sk/index.php?page=blok1)
+🌐 **Course website:** [ap.urk.fei.stuba.sk](http://ap.urk.fei.stuba.sk/) | [Block 1 tasks](http://ap.urk.fei.stuba.sk/student/blok-1)
 
 ## 🇬🇧 English
 
@@ -33,7 +33,7 @@ All tasks compile with any standard C compiler (GCC, Clang, MSVC).
 ## 🇷🇺 Русский
 
 Блок 1 охватывает системы счисления, побитовые операции и численные методы на C.  
-🌐 [Страница курса](http://ap.urk.fei.stuba.sk/) · [Задания Блока 1](http://ap.urk.fei.stuba.sk/index.php?page=blok1)
+🌐 [Страница курса](http://ap.urk.fei.stuba.sk/) · [Задания Блока 1](http://ap.urk.fei.stuba.sk/student/blok-1)
 
 ### Задания
 
