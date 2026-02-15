@@ -10,6 +10,7 @@
 // Kompilujte: MSVC, architektúra x86 alebo x64
 // Projekt nastaviť na MultiByte (nie Unicode).
 
+#define WIN32_LEAN_AND_MEAN
 #include <mmsystem.h>
 #include <stdio.h>
 #include <string.h>
