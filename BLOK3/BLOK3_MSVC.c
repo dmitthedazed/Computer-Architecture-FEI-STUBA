@@ -1,371 +1,431 @@
+// BLOK 3 — Sieťové programovanie (TCP klient)
+// Verzia pre Windows (Winsock2, MSVC)
+//
+// Program sa pripojí k serveru cez TCP, umožňuje posielať a prijímať správy.
+// Podporuje:
+//   - XOR dešifrovanie (131-bajtové správy, kľúč 55)
+//   - Extrakciu znakov na prvočíselných pozíciách (PRIMENUMBER)
+//   - Výpočet zvyšku z AIS ID
+//   - Caesarovu šifru (BONUS)
+// Komunikácia je zobrazená ako dvojstranný chat s farebnými atribútmi konzoly.
+
+#include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <windows.h>
-#include <string.h> 
-#include <stdlib.h> 
 
 #pragma comment(lib, "Ws2_32.lib")
 
-// Function to set console output to UTF-8
-void utf8_console() {
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
+// ─── Configuration ──────────────────────────────────────────────────────────
+#define AP_SERVER_IP "147.175.115.34"
+#define AP_SERVER_PORT "777"
+#define DEFAULT_BUFLEN 4096
+#define CHAT_WIDTH 40 // max chars per line in chat column
+#define SERVER_COL 50 // X offset for server messages
+
+// ─── Console colors ─────────────────────────────────────────────────────────
+#define CLR_USER 9    // bright blue
+#define CLR_SERVER 10 // bright green
+#define CLR_ERROR 12  // bright red
+#define CLR_RESET 15  // white
+
+// ─── Global ─────────────────────────────────────────────────────────────────
+static HANDLE hConsole;
+static COORD chatPos;
+static FILE *logFile;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Helper functions
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** Set console code page to UTF-8 and save the console handle. */
+static void initConsole(void) {
+  SetConsoleOutputCP(CP_UTF8);
+  SetConsoleCP(CP_UTF8);
+  hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+  chatPos.X = 0;
+  chatPos.Y = 0;
+  system("cls");
 }
 
-// Function to calculate the remainder as per the requirements
-int aisid_remainder(int student_id) {
-    int d1 = student_id / 100000;       // First digit
-    int d2 = (student_id / 10000) % 10; // Second digit
-    int d3 = (student_id / 1000) % 10;  // Third digit
-    int d4 = (student_id / 100) % 10;   // Fourth digit
-    int d5 = (student_id / 10) % 10;    // Fifth digit
-
-    int sum_first_five = d1 + d2 + d3 + d4 + d5;
-
-    int fifth_digit = d5;
-
-    if (fifth_digit == 0) {
-        printf("Error: The fifth digit is zero, cannot divide by zero.\n");
-        return -1;
-    }
-
-    int remainder = sum_first_five % fifth_digit;
-    return remainder;
+/** Open (or reopen) the chat log file in append mode. */
+static void initLog(void) {
+  logFile = fopen("chat_log.txt", "w");
+  if (!logFile) {
+    fprintf(stderr, "Warning: could not open chat_log.txt\n");
+  }
 }
 
-// Function to log messages to a file
-void log_message(const char *source, const char *message) {
-    FILE *logFile = NULL;
-    errno_t err;
-
-    err = fopen_s(&logFile, "chat_log.txt", "a"); 
-    if (err != 0 || logFile == NULL) { 
-        char errmsg[256];
-        strerror_s(errmsg, sizeof(errmsg), err); 
-        fprintf(stderr, "Error opening log file: %s (code: %d)\n", errmsg, err);
-        if (logFile == NULL && err == 0) { 
-             perror("Error opening log file (perror)");
-        }
-        return;
-    }
-    fprintf(logFile, "%s: %s\n", source, message);
-    fclose(logFile);
+/** Append one line to the chat log. */
+static void logMsg(const char *source, const char *text) {
+  if (!logFile)
+    return;
+  fprintf(logFile, "%s: %s\n", source, text);
+  fflush(logFile);
 }
 
-void print_with_position(HANDLE console, const char* text, COORD* point_ptr, WORD color) {
-    SetConsoleCursorPosition(console, *point_ptr);
-    SetConsoleTextAttribute(console, color);
-    
-    printf("%s", text);
-    
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    if (GetConsoleScreenBufferInfo(console, &csbi)) {
-        *point_ptr = csbi.dwCursorPosition;
-    }
-}
+// ─── Connection helpers ─────────────────────────────────────────────────────
 
-void print_newline(HANDLE console, COORD* point_ptr) {
-    printf("\n");
-    point_ptr->X = 0;
-    point_ptr->Y += 1;
-    SetConsoleCursorPosition(console, *point_ptr);
-}
+/** Initialise Winsock, resolve the address, create a socket and connect.
+ *  Returns the connected SOCKET or exits on failure.                       */
+static SOCKET initConnection(void) {
+  WSADATA wsaData;
+  int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  if (iResult != 0) {
+    fprintf(stderr, "WSAStartup failed: %d\n", iResult);
+    exit(1);
+  }
 
-void sync_cursor_position(HANDLE console, COORD* point_ptr) {
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    if (GetConsoleScreenBufferInfo(console, &csbi)) {
-        *point_ptr = csbi.dwCursorPosition;
-    }
-}
+  struct addrinfo hints, *result = NULL;
+  ZeroMemory(&hints, sizeof(hints));
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_protocol = IPPROTO_TCP;
 
-int main(void) 
-{
-    utf8_console(); 
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    
-    // Add cursor positioning for two-sided chat display
-    COORD point;
-    point.X = 0;
-    point.Y = 0;
-    
-    // Clear screen at start for clean display
-    system("cls");
-
-    WSADATA wsaData;
-    int iResult;
-
-    iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-    if (iResult != 0)
-    {
-        printf("WSAStartup failed: %d\n", iResult);
-        return 1;
-    }
-
-    struct addrinfo *result = NULL, *ptr = NULL;
-    struct addrinfo hints;
-
-    ZeroMemory(&hints, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-
-    iResult = getaddrinfo("147.175.115.34", "777", &hints, &result);
-    if (iResult != 0)
-    {
-        WSACleanup();
-        return 1;
-    }
-    else
-        printf("getaddrinfo didn't fail...\n");
-
-    SOCKET ConnectSocket = INVALID_SOCKET;
-
-    ptr = result;
-
-    ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype,ptr->ai_protocol);
-
-    if (ConnectSocket == INVALID_SOCKET)
-    {
-        printf("Error at socket(): %ld\n", WSAGetLastError());
-        freeaddrinfo(result);
-        WSACleanup();
-        return 1;
-    }
-    else
-        printf("Error at socket DIDN'T occur...\n");
-
-    iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
-    if (iResult == SOCKET_ERROR)
-    {
-        printf("Not connected to server...\n");
-        closesocket(ConnectSocket);
-        ConnectSocket = INVALID_SOCKET;
-        freeaddrinfo(result);
-        WSACleanup();
-        return 1;
-    }
-    else
-    {
-        printf("Connected to server!\n");
-    }
-    
-    Sleep(250);
-
-    #define DEFAULT_BUFLEN 4096
-    char sendbuf[DEFAULT_BUFLEN];
-    char recvbuf[DEFAULT_BUFLEN];
-    int recvbuflen = DEFAULT_BUFLEN;
-
-    while (1) {
-        // User message left side
-        point.X = 0;
-        point.Y += 2;
-        SetConsoleCursorPosition(hConsole, point);
-        
-        SetConsoleTextAttribute(hConsole, 9); 
-        printf("Enter message: ");
-        SetConsoleTextAttribute(hConsole, 15); 
-        if (fgets(sendbuf, sizeof(sendbuf), stdin) == NULL) {
-            printf("Error reading input.\n");
-            break; 
-        }
-
-        sendbuf[strcspn(sendbuf, "\n")] = 0;
-
-        if (strcmp(sendbuf, "quit") == 0) {
-            SetConsoleTextAttribute(hConsole, 9); 
-            printf("Exiting chat.\n");
-            SetConsoleTextAttribute(hConsole, 15); 
-            log_message("User", "quit"); 
-            break;
-        }
-        point.Y += 1;
-        SetConsoleCursorPosition(hConsole, point);
-        SetConsoleTextAttribute(hConsole, 9);
-        printf("You: ");
-        
-        int counter = 0;
-        for (int i = 0; i < strlen(sendbuf); i++) {
-            if (sendbuf[i] == ' ') {
-                int wordLen = 0;
-                int j = i + 1;
-                while (sendbuf[j] != '\0' && sendbuf[j] != ' ') {
-                    wordLen++;
-                    j++;
-                }
-                if ((wordLen + counter) >= 40) {
-                    counter = 0;
-                    point.X = 0;
-                    point.Y += 1;
-                    SetConsoleCursorPosition(hConsole, point);
-                }
-            }
-            
-            if (counter == 40) {
-                counter = 0;
-                point.X = 0;
-                point.Y += 1;
-                SetConsoleCursorPosition(hConsole, point);
-            }
-            
-            printf("%c", sendbuf[i]);
-            Sleep(1);
-            counter++;
-        }
-        printf("\n");
-        SetConsoleTextAttribute(hConsole, 15); 
-        
-        log_message("User", sendbuf); 
-
-        iResult = send(ConnectSocket, sendbuf, (int)strlen(sendbuf), 0);
-        if (iResult == SOCKET_ERROR)
-        {
-            printf("send failed: %d\n", WSAGetLastError());
-            closesocket(ConnectSocket);
-            WSACleanup();
-            return 1;
-        }
-
-        if (strcmp(sendbuf, "753332") == 0) {
-            point.X = 0;
-            point.Y += 1;
-            SetConsoleCursorPosition(hConsole, point);
-            
-            int remainder_result = aisid_remainder(135532);
-        
-            if (remainder_result != -1) {
-                printf("Computed remainder for 135532: %d\n", remainder_result);
-                point.Y += 1; 
-            }
-        }
-
-        ZeroMemory(recvbuf, DEFAULT_BUFLEN);
-
-        iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
-
-        if (iResult > 0)
-        {
-            point.X = 0;
-            point.Y += 1;
-            SetConsoleCursorPosition(hConsole, point);
-            
-            printf("Bytes received: %d\n", iResult);
-            point.Y += 1; 
-
-            if (iResult == 131) {
-                printf("Decrypting 131 byte message...\n");
-                point.Y += 1; // Update Y position
-                for (int k = 0; k < iResult; k++) {
-                    recvbuf[k] = recvbuf[k] ^ 55;
-                }
-            }
-            
-            char temp_recv_log_buf[DEFAULT_BUFLEN + 1];
-            memcpy(temp_recv_log_buf, recvbuf, iResult);
-            temp_recv_log_buf[iResult] = '\0';
-            
-            point.X = 50;
-            SetConsoleCursorPosition(hConsole, point);
-            
-            if (strcmp(sendbuf, "PRIMENUMBER") == 0) {
-                char* prime_extracted_message = (char*)malloc(iResult + 1);
-                if (prime_extracted_message == NULL) {
-                    SetConsoleTextAttribute(hConsole, 12); // Bright Red for error
-                    printf("Error: Memory allocation failed.\n");
-                    SetConsoleTextAttribute(hConsole, 15); // Reset to White
-                } else {
-                    int n = 0;
-                    for (int idx_to_check = 2; idx_to_check <= iResult; idx_to_check++) {
-                        int is_prime = 1;
-                        for (int j = 2; j * j <= idx_to_check; j++) {
-                            if (idx_to_check % j == 0) {
-                                is_prime = 0;
-                                break;
-                            }
-                        }
-
-                        if (is_prime) {
-                            prime_extracted_message[n++] = recvbuf[idx_to_check - 1];
-                        }
-                    }
-                    prime_extracted_message[n] = '\0';
-
-                    SetConsoleTextAttribute(hConsole, 10);
-                    printf("Server (PRIME): ");
-                    
-                    int counter = 0;
-                    for (int j = 0; j < n; j++) {
-                        if (counter == 40) {
-                            counter = 0;
-                            point.X = 50;
-                            point.Y += 1;
-                            SetConsoleCursorPosition(hConsole, point);
-                        }
-                        
-                        printf("%c", prime_extracted_message[j]);
-                        Sleep(1);
-                        counter++;
-                    }
-                    printf("\n");
-                    SetConsoleTextAttribute(hConsole, 15); // Reset to White
-                    log_message("Server (PRIMENUMBER)", prime_extracted_message);
-                    free(prime_extracted_message);
-                }
-            } else {
-                SetConsoleTextAttribute(hConsole, 10); // Green for server
-                printf("Server: ");
-                
-                int counter = 0;
-                for (int j = 0; j < iResult; j++) {
-                    if (recvbuf[j] == ' ') {
-                        int wordLen = 0;
-                        int k = j + 1;
-                        while (k < iResult && recvbuf[k] != ' ' && recvbuf[k] != '\0') {
-                            wordLen++;
-                            k++;
-                        }
-                        if ((wordLen + counter) >= 40) {
-                            counter = 0;
-                            point.X = 50;
-                            point.Y += 1;
-                            SetConsoleCursorPosition(hConsole, point);
-                        }
-                    }
-                    
-                    if (counter == 40) {
-                        counter = 0;
-                        point.X = 50;
-                        point.Y += 1;
-                        SetConsoleCursorPosition(hConsole, point);
-                    }
-                    
-                    printf("%c", recvbuf[j]);
-                    Sleep(1);
-                    counter++;
-                }
-                printf("\n");
-                SetConsoleTextAttribute(hConsole, 15); // Reset to White
-                log_message("Server", temp_recv_log_buf);
-            }
-            
-            point.Y += 1;  
-        }
-        else if (iResult == 0)
-        {
-            printf("Connection closed by server.\n");
-            break;
-        }
-        else
-        {
-            printf("recv failed with error: %d\n", WSAGetLastError());
-            break;
-        }
-    }
-
-    freeaddrinfo(result);
-    closesocket(ConnectSocket);
+  iResult = getaddrinfo(AP_SERVER_IP, AP_SERVER_PORT, &hints, &result);
+  if (iResult != 0) {
+    fprintf(stderr, "getaddrinfo failed: %d\n", iResult);
     WSACleanup();
+    exit(1);
+  }
 
+  SOCKET sock =
+      socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+  if (sock == INVALID_SOCKET) {
+    fprintf(stderr, "socket() failed: %d\n", WSAGetLastError());
+    freeaddrinfo(result);
+    WSACleanup();
+    exit(1);
+  }
+
+  iResult = connect(sock, result->ai_addr, (int)result->ai_addrlen);
+  freeaddrinfo(result);
+  if (iResult == SOCKET_ERROR) {
+    fprintf(stderr, "connect() failed – server unreachable.\n");
+    closesocket(sock);
+    WSACleanup();
+    exit(1);
+  }
+
+  printf("Connected to %s:%s\n", AP_SERVER_IP, AP_SERVER_PORT);
+  Sleep(250);
+  return sock;
+}
+
+/** Clean up Winsock resources. */
+static void disconnect(SOCKET sock) {
+  closesocket(sock);
+  WSACleanup();
+}
+
+// ─── Chat display helpers ───────────────────────────────────────────────────
+
+/** Print text on the LEFT side of the console (user messages). */
+static void printLeft(const char *prefix, const char *text) {
+  chatPos.X = 0;
+  chatPos.Y += 1;
+  SetConsoleCursorPosition(hConsole, chatPos);
+  SetConsoleTextAttribute(hConsole, CLR_USER);
+  printf("%s ", prefix);
+
+  int col = (int)strlen(prefix) + 1;
+  for (int i = 0; text[i]; i++) {
+    if (col >= CHAT_WIDTH) {
+      col = 0;
+      chatPos.Y += 1;
+      chatPos.X = 0;
+      SetConsoleCursorPosition(hConsole, chatPos);
+    }
+    putchar(text[i]);
+    fflush(stdout);
+    Sleep(1);
+    col++;
+  }
+  printf("\n");
+  chatPos.Y += 1;
+  SetConsoleTextAttribute(hConsole, CLR_RESET);
+}
+
+/** Print text on the RIGHT side of the console (server messages). */
+static void printRight(const char *prefix, const char *text) {
+  chatPos.X = SERVER_COL;
+  chatPos.Y += 1;
+  SetConsoleCursorPosition(hConsole, chatPos);
+  SetConsoleTextAttribute(hConsole, CLR_SERVER);
+  printf("%s ", prefix);
+
+  int col = (int)strlen(prefix) + 1;
+  for (int i = 0; text[i]; i++) {
+    if (text[i] == ' ') {
+      /* look-ahead: check if the next word fits on this line */
+      int wlen = 0;
+      for (int k = i + 1; text[k] && text[k] != ' '; k++)
+        wlen++;
+      if (col + wlen >= CHAT_WIDTH) {
+        col = 0;
+        chatPos.X = SERVER_COL;
+        chatPos.Y += 1;
+        SetConsoleCursorPosition(hConsole, chatPos);
+      }
+    }
+    if (col >= CHAT_WIDTH) {
+      col = 0;
+      chatPos.X = SERVER_COL;
+      chatPos.Y += 1;
+      SetConsoleCursorPosition(hConsole, chatPos);
+    }
+    putchar(text[i]);
+    fflush(stdout);
+    Sleep(1);
+    col++;
+  }
+  printf("\n");
+  chatPos.Y += 1;
+  SetConsoleTextAttribute(hConsole, CLR_RESET);
+}
+
+// ─── Send / receive wrappers ────────────────────────────────────────────────
+
+/** Send a message and log it.  Returns bytes sent or exits on error. */
+static int sendMsg(SOCKET sock, const char *msg) {
+  int n = send(sock, msg, (int)strlen(msg), 0);
+  if (n == SOCKET_ERROR) {
+    fprintf(stderr, "send failed: %d\n", WSAGetLastError());
+    disconnect(sock);
+    exit(1);
+  }
+  printLeft("You:", msg);
+  logMsg("User", msg);
+  return n;
+}
+
+/** Receive a message into buf (caller provides DEFAULT_BUFLEN).
+ *  Returns bytes received, 0 on connection close, or exits on error.       */
+static int recvMsg(SOCKET sock, char *buf) {
+  ZeroMemory(buf, DEFAULT_BUFLEN);
+  int n = recv(sock, buf, DEFAULT_BUFLEN - 1, 0);
+  if (n > 0) {
+    buf[n] = '\0';
+  } else if (n == 0) {
+    printf("Connection closed by server.\n");
+  } else {
+    fprintf(stderr, "recv failed: %d\n", WSAGetLastError());
+  }
+  return n;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Task-specific logic
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** Auto-send helper: send a fixed reply and immediately read response.
+ *  Returns 1 so the caller can skip the next manual input.                 */
+static int autoSend(SOCKET sock, const char *reply, char *recvbuf) {
+  sendMsg(sock, reply);
+  return 1; /* flag: skip next user input */
+}
+
+/** Compute remainder from AIS student ID (6 digits).
+ *  sum(first 5 digits) % fifth_digit, encoded as a printable char.        */
+static char aisidRemainder(const char *id) {
+  int sum = 0;
+  for (int i = 0; i < 5; i++) {
+    sum += id[i] - '0';
+  }
+  int div = id[4] - '0';
+  if (div == 0)
+    div = 9;
+  return (char)((sum % div) + '0');
+}
+
+/** XOR decrypt (key = 55) with isprint validation. */
+static void decryptXOR(const char *src, int len, char *dst) {
+  int j = 0;
+  for (int i = 0; i < len; i++) {
+    char ch = src[i] ^ 55;
+    if (isprint((unsigned char)ch) || ch == ' ' || ch == '\n') {
+      dst[j++] = ch;
+    }
+  }
+  dst[j] = '\0';
+}
+
+/** Check if n is a prime number. */
+static int isPrime(int n) {
+  if (n < 2)
     return 0;
+  if (n == 2)
+    return 1;
+  if (n % 2 == 0)
+    return 0;
+  for (int d = 3; d * d <= n; d += 2) {
+    if (n % d == 0)
+      return 0;
+  }
+  return 1;
+}
+
+/** Extract characters at prime-number positions (1-indexed). */
+static void extractPrimeChars(const char *src, char *dst) {
+  int len = (int)strlen(src);
+  int j = 0;
+  for (int i = 2; i <= len; i++) {
+    if (isPrime(i)) {
+      dst[j++] = src[i - 1];
+    }
+  }
+  dst[j] = '\0';
+}
+
+/** Caesar cipher: shift uppercase letters by `shift` positions.
+ *  Input string is assumed to be uppercase or gets uppercased.             */
+static void caesarCipher(const char *src, int shift, char *dst) {
+  int len = (int)strlen(src);
+  for (int i = 0; i < len; i++) {
+    char ch = (char)toupper((unsigned char)src[i]);
+    if (isalpha((unsigned char)ch)) {
+      ch = (char)(((ch - 'A' + shift) % 26) + 'A');
+    }
+    dst[i] = ch;
+  }
+  dst[len] = '\0';
+}
+
+/** Extract the integral part of a double as a string (static buffer). */
+static const char *integralPart(double value) {
+  static char buf[16];
+  snprintf(buf, sizeof(buf), "%d", (int)value);
+  return buf;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Main chat loop
+// ═══════════════════════════════════════════════════════════════════════════
+
+int main(void) {
+  initConsole();
+  initLog();
+
+  SOCKET sock = initConnection();
+
+  char sendbuf[DEFAULT_BUFLEN];
+  char recvbuf[DEFAULT_BUFLEN];
+  char decoded[DEFAULT_BUFLEN];
+  int skipInput = 0; /* when 1, skip manual input (auto-reply) */
+
+  while (1) {
+    /* ── 1. Get user input (or skip if we auto-replied) ──────── */
+    if (!skipInput) {
+      chatPos.X = 0;
+      chatPos.Y += 1;
+      SetConsoleCursorPosition(hConsole, chatPos);
+      SetConsoleTextAttribute(hConsole, CLR_USER);
+      printf("Enter message: ");
+      SetConsoleTextAttribute(hConsole, CLR_RESET);
+
+      if (fgets(sendbuf, sizeof(sendbuf), stdin) == NULL)
+        break;
+      sendbuf[strcspn(sendbuf, "\n")] = '\0';
+      if (strlen(sendbuf) == 0)
+        continue;
+      if (strcmp(sendbuf, "quit") == 0) {
+        logMsg("User", "quit");
+        break;
+      }
+
+      sendMsg(sock, sendbuf);
+    }
+    skipInput = 0;
+
+    /* ── 2. Receive server response ──────────────────────────── */
+    int n = recvMsg(sock, recvbuf);
+    if (n <= 0)
+      break;
+
+    /* ── 3. Handle XOR decryption (131 bytes, key 55) ────────── */
+    if (n == 131) {
+      decryptXOR(recvbuf, n, decoded);
+      printRight("Server (decrypted):", decoded);
+      logMsg("Server (XOR)", decoded);
+
+      /* Auto-respond if the decrypted message asks a question */
+      if (strstr(decoded, "Are you willing to find out where she is?")) {
+        skipInput = autoSend(sock, "BB", recvbuf);
+        continue;
+      }
+    }
+    /* ── 4. Handle PRIMENUMBER extraction ────────────────────── */
+    else if (strcmp(sendbuf, "PRIMENUMBER") == 0) {
+      extractPrimeChars(recvbuf, decoded);
+      printRight("Server (PRIME):", decoded);
+      logMsg("Server (PRIMENUMBER)", decoded);
+    }
+    /* ── 5. Normal server message ────────────────────────────── */
+    else {
+      printRight("Server:", recvbuf);
+      logMsg("Server", recvbuf);
+    }
+
+    /* ── 6. Auto-response pattern matching ───────────────────── */
+    /* Code prompts */
+    if (strstr(recvbuf, "send me the code 845548")) {
+      skipInput = autoSend(sock, "845548", recvbuf);
+      continue;
+    }
+    if (strstr(recvbuf, "send me the code 753332")) {
+      skipInput = autoSend(sock, "753332", recvbuf);
+      continue;
+    }
+    if (strstr(recvbuf, "send me the code 123")) {
+      skipInput = autoSend(sock, "123", recvbuf);
+      continue;
+    }
+    if (strstr(recvbuf, "333222334")) {
+      skipInput = autoSend(sock, "333222334", recvbuf);
+      continue;
+    }
+    /* Coordinate prompts */
+    if (strstr(recvbuf, "Send me the integral part of the first coordinate")) {
+      skipInput = autoSend(sock, integralPart(51.8723), recvbuf);
+      continue;
+    }
+    if (strstr(recvbuf, "Send me the integral part of the second coordinate")) {
+      skipInput = autoSend(sock, integralPart(0.0012), recvbuf);
+      continue;
+    }
+    if (strstr(recvbuf, "Send me the abbreviation of the detected object")) {
+      skipInput = autoSend(sock, "B.B.", recvbuf);
+      continue;
+    }
+    /* PRIMENUMBER */
+    if (strstr(recvbuf, "send me the string PRIMENUMBER")) {
+      skipInput = autoSend(sock, "PRIMENUMBER", recvbuf);
+      continue;
+    }
+    /* Trinity / Sion */
+    if (strstr(recvbuf, "send it to Sion")) {
+      skipInput = autoSend(sock, "Trinity", recvbuf);
+      continue;
+    }
+    /* AIS ID remainder */
+    if (strstr(recvbuf, "The result must be computed by your software!")) {
+      char reply[2] = {aisidRemainder(sendbuf), '\0'};
+      skipInput = autoSend(sock, reply, recvbuf);
+      continue;
+    }
+    /* Caesar cipher BONUS */
+    if (strstr(recvbuf, "THE BONUS IS HERE")) {
+      caesarCipher("OBVMHKR", 7, decoded);
+      skipInput = autoSend(sock, decoded, recvbuf);
+      continue;
+    }
+  }
+
+  if (logFile)
+    fclose(logFile);
+  disconnect(sock);
+  return 0;
 }

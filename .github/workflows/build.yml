@@ -1,0 +1,150 @@
+name: Build & Verify
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Linux / GCC — portable files only
+  # ─────────────────────────────────────────────
+  build-linux:
+    runs-on: ubuntu-latest
+    name: Linux (GCC)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install GCC
+        run: sudo apt-get update && sudo apt-get install -y gcc
+
+      # ── BLOK 1 (all portable) ──
+      - name: Compile 1_Uvod.c
+        run: gcc -Wall -Wextra -std=c99 -o build_uvod 1_Uvod.c
+
+      - name: Compile BLOK1/BLOK1.C (index)
+        run: gcc -x c -Wall -Wextra -std=c99 -o build_blok1 BLOK1/BLOK1.C
+
+      - name: Compile BLOK1/Uloha_1.1.c
+        run: gcc -Wall -Wextra -std=c99 -o build_1_1 BLOK1/Uloha_1.1.c
+
+      - name: Compile BLOK1/Uloha_1.2.c
+        run: gcc -Wall -Wextra -std=c99 -o build_1_2 BLOK1/Uloha_1.2.c
+
+      - name: Compile BLOK1/Uloha_1.3.c
+        run: gcc -Wall -Wextra -std=c99 -o build_1_3 BLOK1/Uloha_1.3.c
+
+      - name: Compile BLOK1/Uloha_1.4.c
+        run: gcc -Wall -Wextra -std=c99 -o build_1_4 BLOK1/Uloha_1.4.c
+
+      - name: Compile BLOK1/Uloha_1.5.c
+        run: gcc -Wall -Wextra -std=c99 -o build_1_5 BLOK1/Uloha_1.5.c -lm
+
+      - name: Compile BLOK1/Uloha_1.6.c
+        run: gcc -Wall -Wextra -std=c99 -o build_1_6 BLOK1/Uloha_1.6.c
+
+      # ── BLOK 2 (portable files only) ──
+      - name: Compile BLOK2/Uloha_2.3.1.c
+        run: gcc -Wall -Wextra -std=c99 -o build_2_3_1 BLOK2/Uloha_2.3.1.c
+
+      - name: Compile BLOK2/Uloha_2.3.3.c
+        run: gcc -Wall -Wextra -std=c99 -o build_2_3_3 BLOK2/Uloha_2.3.3.c
+
+      # ── BLOK 3 (Linux version) ──
+      - name: Compile BLOK3/BLOK3_Linux.c
+        run: gcc -Wall -Wextra -std=c99 -o build_blok3 BLOK3/BLOK3_Linux.c
+
+      - name: Build summary
+        run: |
+          echo "✅ All Linux-portable files compiled successfully"
+          echo ""
+          echo "Compiled files:"
+          ls -la build_*
+
+  # ─────────────────────────────────────────────
+  # Windows / MSVC — all files including WinAPI
+  # ─────────────────────────────────────────────
+  build-windows:
+    runs-on: windows-latest
+    name: Windows (MSVC)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x86
+
+      # ── BLOK 1 (all) ──
+      - name: Compile BLOK1/BLOK1.C (index)
+        run: cl /W3 /Fe:build_blok1.exe BLOK1\BLOK1.C
+
+      - name: Compile BLOK1/Uloha_1.1.c
+        run: cl /W3 /Fe:build_1_1.exe BLOK1\Uloha_1.1.c
+
+      - name: Compile BLOK1/Uloha_1.2.c
+        run: cl /W3 /Fe:build_1_2.exe BLOK1\Uloha_1.2.c
+
+      - name: Compile BLOK1/Uloha_1.3.c
+        run: cl /W3 /Fe:build_1_3.exe BLOK1\Uloha_1.3.c
+
+      - name: Compile BLOK1/Uloha_1.4.c
+        run: cl /W3 /Fe:build_1_4.exe BLOK1\Uloha_1.4.c
+
+      - name: Compile BLOK1/Uloha_1.5.c
+        run: cl /W3 /Fe:build_1_5.exe BLOK1\Uloha_1.5.c
+
+      - name: Compile BLOK1/Uloha_1.6.c
+        run: cl /W3 /Fe:build_1_6.exe BLOK1\Uloha_1.6.c
+
+      # ── BLOK 2 (all — including inline asm + WinAPI) ──
+      - name: Compile BLOK2/BLOK2.c (index)
+        run: cl /W3 /Fe:build_blok2.exe BLOK2\BLOK2.c user32.lib
+
+      - name: Compile BLOK2/Uloha_2.1.1.c
+        run: cl /W3 /Fe:build_2_1_1.exe BLOK2\Uloha_2.1.1.c
+
+      - name: Compile BLOK2/Uloha_2.1.2.c
+        run: cl /W3 /Fe:build_2_1_2.exe BLOK2\Uloha_2.1.2.c
+
+      - name: Compile BLOK2/Uloha_2.1.3.c
+        run: cl /W3 /Fe:build_2_1_3.exe BLOK2\Uloha_2.1.3.c
+
+      - name: Compile BLOK2/Uloha_2.1.4.c
+        run: cl /W3 /Fe:build_2_1_4.exe BLOK2\Uloha_2.1.4.c
+
+      - name: Compile BLOK2/Uloha_2.2.c
+        run: cl /W3 /Fe:build_2_2.exe BLOK2\Uloha_2.2.c
+
+      - name: Compile BLOK2/Uloha_2.3.1.c
+        run: cl /W3 /Fe:build_2_3_1.exe BLOK2\Uloha_2.3.1.c
+
+      - name: Compile BLOK2/Uloha_2.3.2.c
+        run: cl /W3 /Fe:build_2_3_2.exe BLOK2\Uloha_2.3.2.c
+
+      - name: Compile BLOK2/Uloha_2.3.3.c
+        run: cl /W3 /Fe:build_2_3_3.exe BLOK2\Uloha_2.3.3.c
+
+      - name: Compile BLOK2/Uloha_2.4.c
+        run: cl /W3 /Fe:build_2_4.exe BLOK2\Uloha_2.4.c winmm.lib
+
+      - name: Compile BLOK2/Uloha_2.5.1.c
+        run: cl /W3 /Fe:build_2_5_1.exe BLOK2\Uloha_2.5.1.c
+
+      - name: Compile BLOK2/Uloha_2.5.2.c
+        run: cl /W3 /Fe:build_2_5_2.exe BLOK2\Uloha_2.5.2.c
+
+      - name: Compile BLOK2/Uloha_2.6.c
+        run: cl /W3 /Fe:build_2_6.exe BLOK2\Uloha_2.6.c
+
+      # ── BLOK 3 (MSVC version) ──
+      - name: Compile BLOK3/BLOK3_MSVC.c
+        run: cl /W3 /Fe:build_blok3.exe BLOK3\BLOK3_MSVC.c ws2_32.lib
+
+      - name: Build summary
+        run: |
+          Write-Output "✅ All Windows files compiled successfully"
+          Write-Output ""
+          Write-Output "Compiled files:"
+          Get-ChildItem build_*.exe | Format-Table Name, Length
