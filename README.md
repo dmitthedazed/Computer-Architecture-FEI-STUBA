@@ -4,6 +4,8 @@
 > Fakulta elektrotechniky a informatiky, Slovenská technická univerzita v Bratislave  
 > Letný semester 2024/2025
 
+🌐 **Stránka predmetu:** [ap.urk.fei.stuba.sk](http://ap.urk.fei.stuba.sk/) — zadania, návody, pravidlá, kontrolné otázky
+
 ## 📁 Štruktúra repozitára
 
 ### Úvod — [`1_Uvod.c`](1_Uvod.c)
@@ -57,7 +59,7 @@ Súhrnný súbor so všetkými úlohami bloku: [`BLOK2.c`](BLOK2/BLOK2.c)
 | [`BLOK3_MSVC.c`](BLOK3/BLOK3_MSVC.c) | TCP chat klient — verzia pre Windows (Winsock2) |
 | [`BLOK3_Linux.c`](BLOK3/BLOK3_Linux.c) | TCP chat klient — verzia pre Linux (POSIX sockets) |
 
-Klient sa pripojí k serveru, umožňuje posielať a prijímať správy, s podporou XOR dešifrovania a extrakcie správ na prvočíselných pozíciách.
+Klient sa pripojí k serveru (`147.175.115.34:777`), umožňuje posielať a prijímať správy, s podporou XOR dešifrovania a extrakcie správ na prvočíselných pozíciách.
 
 ---
 
@@ -83,6 +85,20 @@ gcc BLOK3/BLOK3_Linux.c -o blok3_chat
 # Windows (MSVC) — kompilovať vo Visual Studio, alebo:
 cl BLOK3/BLOK3_MSVC.c ws2_32.lib
 ```
+
+---
+
+## 🔗 Užitočné odkazy
+
+| Odkaz | Popis |
+|-------|-------|
+| [Stránka predmetu](http://ap.urk.fei.stuba.sk/) | Zadania, návody, pravidlá hodnotenia |
+| [Blok 1 — zadania](http://ap.urk.fei.stuba.sk/index.php?page=blok1) | Číselné sústavy, epsilon, Taylor |
+| [Blok 2 — zadania](http://ap.urk.fei.stuba.sk/index.php?page=blok2) | Inline asm, smerníky, semigrafika |
+| [Blok 3 — zadania](http://ap.urk.fei.stuba.sk/index.php?page=blok3) | TCP klient, server `147.175.115.34:777` |
+| [Kontrolné otázky](http://ap.urk.fei.stuba.sk/index.php?page=otazky) | Otázky na obhajobu |
+| [Návody](http://ap.urk.fei.stuba.sk/index.php?page=navody) | Visual Studio, GCC, ASCII tabuľky |
+| [Pravidlá](http://ap.urk.fei.stuba.sk/index.php?page=pravidla) | Hodnotenie, dochádzka, plagiátorstvo |
 
 ---
 

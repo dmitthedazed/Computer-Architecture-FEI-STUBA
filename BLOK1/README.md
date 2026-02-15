@@ -1,5 +1,7 @@
 # BLOK 1 — Number Systems & C Basics / Числовые системы и основы C
 
+🌐 **Course website:** [ap.urk.fei.stuba.sk](http://ap.urk.fei.stuba.sk/) | [Block 1 tasks](http://ap.urk.fei.stuba.sk/index.php?page=blok1)
+
 ## 🇬🇧 English
 
 Block 1 covers number representations, bitwise operations, and numerical methods in C.
@@ -30,7 +32,8 @@ All tasks compile with any standard C compiler (GCC, Clang, MSVC).
 
 ## 🇷🇺 Русский
 
-Блок 1 охватывает системы счисления, побитовые операции и численные методы на C.
+Блок 1 охватывает системы счисления, побитовые операции и численные методы на C.  
+🌐 [Страница курса](http://ap.urk.fei.stuba.sk/) · [Задания Блока 1](http://ap.urk.fei.stuba.sk/index.php?page=blok1)
 
 ### Задания
 
