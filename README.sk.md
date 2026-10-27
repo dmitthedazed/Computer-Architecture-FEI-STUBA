@@ -6,14 +6,17 @@
 
 Letný semester 2024/2025. Stránka predmetu: [ap.urk.fei.stuba.sk](http://ap.urk.fei.stuba.sk/)
 
-[![Build](https://github.com/dmitthedazed/Computer-Architecture-FEI-STUBA/actions/workflows/build.yml/badge.svg)](https://github.com/dmitthedazed/Computer-Architecture-FEI-STUBA/actions/workflows/build.yml)
-![C](https://img.shields.io/badge/C-C99-A8B9CC?logo=c&logoColor=white)
-![x86](https://img.shields.io/badge/x86-inline%20asm-lightgrey)
-[![License: MIT](https://img.shields.io/badge/License-MIT-lightgrey)](LICENSE)
+[![Build](https://img.shields.io/github/actions/workflow/status/dmitthedazed/Computer-Architecture-FEI-STUBA/build.yml?style=flat-square&label=Build)](https://github.com/dmitthedazed/Computer-Architecture-FEI-STUBA/actions/workflows/build.yml)
+![C](https://img.shields.io/badge/C-C99-A8B9CC?logo=c&logoColor=white&style=flat-square)
+![x86](https://img.shields.io/badge/x86-inline%20asm-lightgrey?style=flat-square)
+[![Licencia: MIT](https://img.shields.io/badge/Licencia-MIT-lightgrey?style=flat-square)](LICENSE)
 
 <p align="center"><a href="README.md">English</a> · <b>Slovenčina</b></p>
 
 </div>
+
+> [!NOTE]
+> Archivované. Predmet je ukončený, repozitár je len na čítanie a slúži ako referencia.
 
 > [!WARNING]
 > Blok 2 používa MSVC inline assembler (`__asm {}`), ktorý funguje iba v 32-bitovom režime MSVC. GCC a Clang ho nepodporujú.
@@ -96,10 +99,6 @@ CI prekladá všetko na Linuxe (GCC) aj Windowse (MSVC, x86).
 > [!NOTE]
 > Kód slúži ako referencia. Na obhajobe musíte vysvetliť každý riadok, preto ho nekopírujte bez pochopenia.
 
----
+## Licencia
 
-<div align="center">
-
-Dmytrii Savin ([@dmitthedazed](https://github.com/dmitthedazed)). Licencia [MIT](LICENSE).
-
-</div>
+[MIT](LICENSE) © Dmytrii Savin

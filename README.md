@@ -6,14 +6,17 @@
 
 Summer semester 2024/2025. Course site: [ap.urk.fei.stuba.sk](http://ap.urk.fei.stuba.sk/)
 
-[![Build](https://github.com/dmitthedazed/Computer-Architecture-FEI-STUBA/actions/workflows/build.yml/badge.svg)](https://github.com/dmitthedazed/Computer-Architecture-FEI-STUBA/actions/workflows/build.yml)
-![C](https://img.shields.io/badge/C-C99-A8B9CC?logo=c&logoColor=white)
-![x86](https://img.shields.io/badge/x86-inline%20asm-lightgrey)
-[![License: MIT](https://img.shields.io/badge/License-MIT-lightgrey)](LICENSE)
+[![Build](https://img.shields.io/github/actions/workflow/status/dmitthedazed/Computer-Architecture-FEI-STUBA/build.yml?style=flat-square&label=Build)](https://github.com/dmitthedazed/Computer-Architecture-FEI-STUBA/actions/workflows/build.yml)
+![C](https://img.shields.io/badge/C-C99-A8B9CC?logo=c&logoColor=white&style=flat-square)
+![x86](https://img.shields.io/badge/x86-inline%20asm-lightgrey?style=flat-square)
+[![License: MIT](https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square)](LICENSE)
 
 <p align="center"><b>English</b> · <a href="README.sk.md">Slovenčina</a></p>
 
 </div>
+
+> [!NOTE]
+> Archived. The course is over, so this repository is read-only and kept for reference.
 
 > [!WARNING]
 > Block 2 uses MSVC inline assembly (`__asm {}`), which only builds in 32-bit MSVC. GCC and Clang do not support it.
@@ -96,10 +99,6 @@ CI compiles everything on Linux (GCC) and Windows (MSVC, x86).
 > [!NOTE]
 > The code is here for reference. At the defence you have to explain every line, so don't copy it without understanding it.
 
----
+## License
 
-<div align="center">
-
-Dmytrii Savin ([@dmitthedazed](https://github.com/dmitthedazed)). Licensed under the [MIT License](LICENSE).
-
-</div>
+[MIT](LICENSE) © Dmytrii Savin
