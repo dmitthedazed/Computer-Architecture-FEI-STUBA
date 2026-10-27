@@ -1,111 +1,105 @@
-# 🖥️ Computer Architecture — FEI STU
+<div align="center">
 
-> Riešenia úloh z predmetu **Architektúra počítačov**  
-> Fakulta elektrotechniky a informatiky, Slovenská technická univerzita v Bratislave  
-> Letný semester 2024/2025
+# Computer Architecture
 
-🌐 **Stránka predmetu:** [ap.urk.fei.stuba.sk](http://ap.urk.fei.stuba.sk/) — zadania, návody, pravidlá, kontrolné otázky
+**Solutions for the Computer Architecture course at FEI STUBA: C, x86 inline assembly, Windows API and TCP**
 
-## 📁 Štruktúra repozitára
+Summer semester 2024/2025. Course site: [ap.urk.fei.stuba.sk](http://ap.urk.fei.stuba.sk/)
 
-### Úvod — [`1_Uvod.c`](1_Uvod.c)
-Úvodné cvičenie — práca s cyklami a funkciami v jazyku C.
+[![Build](https://github.com/dmitthedazed/Computer-Architecture-FEI-STUBA/actions/workflows/build.yml/badge.svg)](https://github.com/dmitthedazed/Computer-Architecture-FEI-STUBA/actions/workflows/build.yml)
+![C](https://img.shields.io/badge/C-C99-A8B9CC?logo=c&logoColor=white)
+![x86](https://img.shields.io/badge/x86-inline%20asm-lightgrey)
+[![License: MIT](https://img.shields.io/badge/License-MIT-lightgrey)](LICENSE)
 
----
+<p align="center"><b>English</b> · <a href="README.sk.md">Slovenčina</a></p>
 
-### BLOK 1 — Číselné sústavy a základy C  
-📖 Podrobné README: [🇬🇧 English / 🇷🇺 Русский](BLOK1/README.md)
+</div>
 
-| Úloha | Téma | Body | Súbor |
-|-------|------|------|-------|
-| 1.1 | Zobrazenie čísla v dvojkovej, desiatkovej a šestnástkovej sústave | 2b | [`Uloha_1.1.c`](BLOK1/Uloha_1.1.c) |
-| 1.2 | Rotačný posun bitov doprava (cyklický posun) | 2b | [`Uloha_1.2.c`](BLOK1/Uloha_1.2.c) |
-| 1.3 | Počet jednotiek (nastavených bitov) v binárnej reprezentácii čísla | 2b | [`Uloha_1.3.c`](BLOK1/Uloha_1.3.c) |
-| 1.4 | Výpočet strojového epsilon pre `float` a `double` | 3b | [`Uloha_1.4.c`](BLOK1/Uloha_1.4.c) |
-| 1.5 | Výpočet `sin(x)` pomocou Taylorovho radu | 4b | [`Uloha_1.5.c`](BLOK1/Uloha_1.5.c) |
-| 1.6 | Výpočet kontrolnej sumy (checksum) IntelHex riadka | 4b | [`Uloha_1.6.c`](BLOK1/Uloha_1.6.c) |
+> [!WARNING]
+> Block 2 uses MSVC inline assembly (`__asm {}`), which only builds in 32-bit MSVC. GCC and Clang do not support it.
 
-Súhrnný súbor so všetkými úlohami bloku: [`BLOK1.C`](BLOK1/BLOK1.C)
+Each block has its own README with a short English and Russian description.
 
----
+## Intro
 
-### BLOK 2 — Inline assembler a systémové programovanie  
-📖 Podrobné README: [🇬🇧 English / 🇷🇺 Русский](BLOK2/README.md)
+[`1_Uvod.c`](1_Uvod.c): loops and functions in C.
 
-| Úloha | Téma | Body | Súbor |
-|-------|------|------|-------|
-| 2.1.1 | Súčet dvoch čísel pomocou inline assemblera | 1b | [`Uloha_2.1.1.c`](BLOK2/Uloha_2.1.1.c) |
-| 2.1.2 | Násobenie dvomi pomocou bitového posunu (SHL) | 1b | [`Uloha_2.1.2.c`](BLOK2/Uloha_2.1.2.c) |
-| 2.1.3 | Prevod číslice na hexadecimálny ASCII znak | 3b | [`Uloha_2.1.3.c`](BLOK2/Uloha_2.1.3.c) |
-| 2.1.4 | Zistenie výrobcu procesora pomocou inštrukcie CPUID | 2b | [`Uloha_2.1.4.c`](BLOK2/Uloha_2.1.4.c) |
-| 2.2 | Práca so smerníkmi — adresy, dereferencie | 3b | [`Uloha_2.2.c`](BLOK2/Uloha_2.2.c) |
-| 2.3.1 | Konverzia kódovania ISO-8859-2 → CP-1250 | 2b | [`Uloha_2.3.1.c`](BLOK2/Uloha_2.3.1.c) |
-| 2.3.2 | Čítanie súboru a XOR dešifrovanie | 1b | [`Uloha_2.3.2.c`](BLOK2/Uloha_2.3.2.c) |
-| 2.3.3 | Rekonštrukcia RAID poľa pomocou XOR | 3b | [`Uloha_2.3.3.c`](BLOK2/Uloha_2.3.3.c) |
-| 2.4 | Multimediálny prehrávač (MCI API) | 4b | [`Uloha_2.4.c`](BLOK2/Uloha_2.4.c) |
-| 2.5.1 | Zmena farby textu v konzole | 1b | [`Uloha_2.5.1.c`](BLOK2/Uloha_2.5.1.c) |
-| 2.5.2 | Semigrafická tabuľka na pozícii [x,y] | 3b | [`Uloha_2.5.2.c`](BLOK2/Uloha_2.5.2.c) |
-| 2.6 | Meranie reakčného času (klávesnica) | 4b | [`Uloha_2.6.c`](BLOK2/Uloha_2.6.c) |
+## Block 1: number systems and C basics
 
-Súhrnný súbor so všetkými úlohami bloku: [`BLOK2.c`](BLOK2/BLOK2.c)
+Combined file: [`BLOK1.C`](BLOK1/BLOK1.C). Details: [BLOK1/README.md](BLOK1/README.md).
 
----
+| # | Topic | Pts | File |
+|:-:|---|:-:|---|
+| 1.1 | Number in binary, decimal and hexadecimal | 2 | [`Uloha_1.1.c`](BLOK1/Uloha_1.1.c) |
+| 1.2 | Circular right bit rotation | 2 | [`Uloha_1.2.c`](BLOK1/Uloha_1.2.c) |
+| 1.3 | Count set bits | 2 | [`Uloha_1.3.c`](BLOK1/Uloha_1.3.c) |
+| 1.4 | Machine epsilon for `float` and `double` | 3 | [`Uloha_1.4.c`](BLOK1/Uloha_1.4.c) |
+| 1.5 | `sin(x)` via Taylor series | 4 | [`Uloha_1.5.c`](BLOK1/Uloha_1.5.c) |
+| 1.6 | IntelHex line checksum | 4 | [`Uloha_1.6.c`](BLOK1/Uloha_1.6.c) |
 
-### BLOK 3 — Sieťové programovanie (TCP klient)  
-📖 Podrobné README: [🇬🇧 English / 🇷🇺 Русский](BLOK3/README.md)
+## Block 2: inline assembly and system programming
 
-| Súbor | Popis |
-|-------|-------|
-| [`BLOK3_MSVC.c`](BLOK3/BLOK3_MSVC.c) | TCP chat klient — verzia pre Windows (Winsock2) |
-| [`BLOK3_Linux.c`](BLOK3/BLOK3_Linux.c) | TCP chat klient — verzia pre Linux (POSIX sockets) |
+Combined file: [`BLOK2.c`](BLOK2/BLOK2.c). Details: [BLOK2/README.md](BLOK2/README.md).
 
-Klient sa pripojí k serveru (`147.175.115.34:777`), umožňuje posielať a prijímať správy, s podporou XOR dešifrovania a extrakcie správ na prvočíselných pozíciách.
+| # | Topic | Pts | File |
+|:-:|---|:-:|---|
+| 2.1.1 | Sum of two numbers via inline asm | 1 | [`Uloha_2.1.1.c`](BLOK2/Uloha_2.1.1.c) |
+| 2.1.2 | Multiply by 2 using SHL | 1 | [`Uloha_2.1.2.c`](BLOK2/Uloha_2.1.2.c) |
+| 2.1.3 | Digit to hex ASCII character | 3 | [`Uloha_2.1.3.c`](BLOK2/Uloha_2.1.3.c) |
+| 2.1.4 | CPU vendor string via CPUID | 2 | [`Uloha_2.1.4.c`](BLOK2/Uloha_2.1.4.c) |
+| 2.2 | Pointers: addresses and dereferencing | 3 | [`Uloha_2.2.c`](BLOK2/Uloha_2.2.c) |
+| 2.3.1 | ISO-8859-2 to CP-1250 conversion | 2 | [`Uloha_2.3.1.c`](BLOK2/Uloha_2.3.1.c) |
+| 2.3.2 | File read and XOR decryption | 1 | [`Uloha_2.3.2.c`](BLOK2/Uloha_2.3.2.c) |
+| 2.3.3 | RAID array reconstruction via XOR | 3 | [`Uloha_2.3.3.c`](BLOK2/Uloha_2.3.3.c) |
+| 2.4 | Multimedia player (MCI API) | 4 | [`Uloha_2.4.c`](BLOK2/Uloha_2.4.c) |
+| 2.5.1 | Console text colors | 1 | [`Uloha_2.5.1.c`](BLOK2/Uloha_2.5.1.c) |
+| 2.5.2 | Framed semigraphic table at [x,y] | 3 | [`Uloha_2.5.2.c`](BLOK2/Uloha_2.5.2.c) |
+| 2.6 | Reaction time measurement | 4 | [`Uloha_2.6.c`](BLOK2/Uloha_2.6.c) |
 
----
+## Block 3: TCP client
 
-## 🔧 Kompilácia
+A chat client for the course server `147.175.115.34:777`. It can send and receive messages, decrypt XOR blocks and extract the message hidden at prime positions. Details: [BLOK3/README.md](BLOK3/README.md).
 
-### BLOK 1 (GCC / akýkoľvek C kompilátor)
-```bash
-gcc BLOK1/Uloha_1.1.c -o uloha_1_1
-gcc BLOK1/Uloha_1.3.c -o uloha_1_3
-gcc BLOK1/Uloha_1.6.c -o uloha_1_6
+| File | Platform | API |
+|---|---|---|
+| [`BLOK3_MSVC.c`](BLOK3/BLOK3_MSVC.c) | Windows | Winsock2 |
+| [`BLOK3_Linux.c`](BLOK3/BLOK3_Linux.c) | Linux | POSIX sockets |
+
+## Build
+
+Block 1, the intro and the portable parts of block 2 (`Uloha_2.3.1.c`, `Uloha_2.3.3.c`) build with GCC:
+
+```sh
+gcc -Wall -Wextra -std=c99 BLOK1/Uloha_1.1.c -o uloha_1_1
+gcc -Wall -Wextra -std=c99 BLOK1/Uloha_1.5.c -o uloha_1_5 -lm
 ```
 
-### BLOK 2 (vyžaduje MSVC — inline assembler `__asm`)
-Otvoriť vo **Visual Studio** a skompilovať ako C projekt (x86).
+The rest of block 2 needs Visual Studio (x86). Block 3:
 
-> ⚠️ **Upozornenie:** BLOK 2 používa MSVC inline assembler (`__asm {}`), čo funguje **iba** v 32-bitovom režime MSVC.  GCC/Clang tento syntax nepodporujú.
-
-### BLOK 3
-```bash
-# Linux
-gcc BLOK3/BLOK3_Linux.c -o blok3_chat
-
-# Windows (MSVC) — kompilovať vo Visual Studio, alebo:
-cl BLOK3/BLOK3_MSVC.c ws2_32.lib
+```sh
+gcc -Wall -Wextra -std=c99 BLOK3/BLOK3_Linux.c -o blok3_chat
 ```
 
+```bat
+cl BLOK3\BLOK3_MSVC.c ws2_32.lib
+```
+
+CI compiles everything on Linux (GCC) and Windows (MSVC, x86).
+
+## Links
+
+- [Course site](http://ap.urk.fei.stuba.sk/)
+- [Block 1 tasks](http://ap.urk.fei.stuba.sk/student/blok-1)
+- [Block 2 tasks](http://ap.urk.fei.stuba.sk/student/blok-2)
+- [Block 3 tasks](http://ap.urk.fei.stuba.sk/student/blok-3)
+
+> [!NOTE]
+> The code is here for reference. At the defence you have to explain every line, so don't copy it without understanding it.
+
 ---
 
-## 🔗 Užitočné odkazy
+<div align="center">
 
-| Odkaz | Popis |
-|-------|-------|
-| [Stránka predmetu](http://ap.urk.fei.stuba.sk/) | Zadania, návody, pravidlá hodnotenia |
-| [Blok 1 — zadania](http://ap.urk.fei.stuba.sk/index.php?page=blok1) | Číselné sústavy, epsilon, Taylor |
-| [Blok 2 — zadania](http://ap.urk.fei.stuba.sk/index.php?page=blok2) | Inline asm, smerníky, semigrafika |
-| [Blok 3 — zadania](http://ap.urk.fei.stuba.sk/index.php?page=blok3) | TCP klient, server `147.175.115.34:777` |
-| [Kontrolné otázky](http://ap.urk.fei.stuba.sk/index.php?page=otazky) | Otázky na obhajobu |
-| [Návody](http://ap.urk.fei.stuba.sk/index.php?page=navody) | Visual Studio, GCC, ASCII tabuľky |
-| [Pravidlá](http://ap.urk.fei.stuba.sk/index.php?page=pravidla) | Hodnotenie, dochádzka, plagiátorstvo |
+Dmytrii Savin ([@dmitthedazed](https://github.com/dmitthedazed)). Licensed under the [MIT License](LICENSE).
 
----
-
-## ⚠️ Disclaimer
-
-Tento repozitár slúži ako referencia a inšpirácia. **Nekopírujte riešenia bez pochopenia kódu** — na obhajobe musíte vedieť vysvetliť každý riadok.
-
-## 📄 Licencia
-
-[MIT](LICENSE)
+</div>
